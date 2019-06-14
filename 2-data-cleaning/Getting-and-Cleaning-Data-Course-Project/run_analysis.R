@@ -21,5 +21,16 @@ length(grep("mean|std", names(df)))
 first_element_func <- function(x){x[1]}
 first_element <- strsplit(names(df), "\\.")
 unique_fist <- unique(sapply(first_element, first_element_func))
+
+
+a <- sub("^f", "frequency.", names(df))
+b <- sub("^t", "time.", grep("^t[B|G]+", a, value = T))
+c <- sub("Acc", ".acceleration.", b)
+unique(sapply(strsplit(grep("Body", names(df), value = T), "\\."), first_element_func))
+grep("Body", c, value = T)
+Jerk, Gyro
+View(names(df))
+
+
 # 4- Appropriately labels the data set with descriptive variable names.
 # 5- From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject
