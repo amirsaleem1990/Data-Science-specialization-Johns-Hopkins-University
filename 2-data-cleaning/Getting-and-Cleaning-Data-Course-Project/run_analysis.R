@@ -18,24 +18,19 @@ rm(features_names, X_train, y_train, X_test, y_test)
 # 2- Extracts only the measurements on the mean and standard deviation for each measurement.
 length(grep("mean|std", names(df)))
 # 3- Uses descriptive activity names to name the activities in the data set
-a <- sub("^f", "frequency.", names(df))
-b <- sub("^tB", "time.B", a)
-b2 <- sub("^tG", "time.G", b)
-c <- sub("Acc", ".acceleration.", b2)
-d <- sub("BodyG", "Body.G", c)
-e <- sub("GyroJerk", "Gyro.Jerk",d)
-f <- sub("JerkMag", "Jerk.Mag", e)
-g <- tolower(gsub("\\.$", "", gsub("\\.[.]+", ".", f)))
-h <- sub("std", "Standard.deviation", g)
-556 557 558 559 560 561
-i <- gsub("[^?.]mean", "y.mean",  h) # gravitymean to gravity.mean
-j <- gsub("sma", "signal.magnitude.area", i)
-k <- gsub("mag", "magnitude", j)
-l <- sub("gyromagnitude", "gyro.magnitude", k)
-# names(df) <- g
-
-# View(names(df))
-
-
+a <- sub("^f", "frequency.", names(df)) # every leading <F> replaced with <frequency.>
+b <- sub("^tB", "time.B", a)            # every leading <tB> replaced with <time.B>
+b2 <- sub("^tG", "time.G", b)           # every leading <tG> replaced with <time.G>
+c <- sub("Acc", ".acceleration.", b2)   # every <Acc> replaced with <.acceleration.>
+d <- sub("BodyG", "Body.G", c)          # every <BodyG> replaced with <Body.G>
+e <- sub("GyroJerk", "Gyro.Jerk",d)     # added dot btween <Gyro> and <Jerk> if dot is not exist 
+f <- sub("JerkMag", "Jerk.Mag", e)      # added dot between <Jerk> and <Mag> if dot isnot exist
+g <- tolower(gsub("\\.$", "", gsub("\\.[.]+", ".", f))) # every one or more dot/s with single dot, and lower all the list
+h <- sub("std", "Standard.deviation", g) # every <std> replaced with <Standard.deviation>
+i <- gsub("[^?.]mean", "y.mean",  h) # every gravitymean to gravity.mean (once or more in each record)
+j <- gsub("sma", "signal.magnitude.area", i) # <sma> ==> signal.magnitude.area
+k <- gsub("mag", "magnitude", j) # every <mag> replaced with <magnitude>
+l <- sub("gyromagnitude", "gyro.magnitude", k) #every <gyromagnitude> replaced with <gyro.magnitude>
+names(df) <- l
 # 4- Appropriately labels the data set with descriptive variable names.
 # 5- From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject
