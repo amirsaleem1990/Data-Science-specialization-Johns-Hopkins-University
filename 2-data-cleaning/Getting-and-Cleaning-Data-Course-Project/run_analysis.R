@@ -18,18 +18,23 @@ rm(features_names, X_train, y_train, X_test, y_test)
 # 2- Extracts only the measurements on the mean and standard deviation for each measurement.
 length(grep("mean|std", names(df)))
 # 3- Uses descriptive activity names to name the activities in the data set
-first_element_func <- function(x){x[1]}
-first_element <- strsplit(names(df), "\\.")
-unique_fist <- unique(sapply(first_element, first_element_func))
-
-
 a <- sub("^f", "frequency.", names(df))
-b <- sub("^t", "time.", grep("^t[B|G]+", a, value = T))
-c <- sub("Acc", ".acceleration.", b)
-unique(sapply(strsplit(grep("Body", names(df), value = T), "\\."), first_element_func))
-grep("Body", c, value = T)
-Jerk, Gyro
-View(names(df))
+b <- sub("^tB", "time.B", a)
+b2 <- sub("^tG", "time.G", b)
+c <- sub("Acc", ".acceleration.", b2)
+d <- sub("BodyG", "Body.G", c)
+e <- sub("GyroJerk", "Gyro.Jerk",d)
+f <- sub("JerkMag", "Jerk.Mag", e)
+g <- tolower(gsub("\\.$", "", gsub("\\.[.]+", ".", f)))
+h <- sub("std", "Standard.deviation", g)
+556 557 558 559 560 561
+i <- gsub("[^?.]mean", "y.mean",  h) # gravitymean to gravity.mean
+j <- gsub("sma", "signal.magnitude.area", i)
+k <- gsub("mag", "magnitude", j)
+l <- sub("gyromagnitude", "gyro.magnitude", k)
+# names(df) <- g
+
+# View(names(df))
 
 
 # 4- Appropriately labels the data set with descriptive variable names.
