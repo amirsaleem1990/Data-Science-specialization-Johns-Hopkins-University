@@ -1,6 +1,6 @@
 library(utils)
 library(dplyr)
-
+library(tidyr)
 # official.help <- "https://thoughtfulbloke.wordpress.com/2015/09/09/getting-and-cleaning-the-assignment/"
 url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
 download.file(url, destfile = "Dataset.zip")
@@ -16,11 +16,13 @@ y.test <- read.table("UCI HAR Dataset/test/y_test.txt", col.names = c("target"))
 subject.test <- read.table("UCI HAR Dataset/test/subject_test.txt", col.names = "subject")
 
 df <- rbind(cbind(X.train, y.train, subject.train), cbind(X.test, y.test, subject.test))
+# load("df.rda") # saved joined df
+
 # 2- Extracts only the measurements on the mean and standard deviation for each measurement.
 length(grep("mean|std", names(df)))
 # 3- Uses descriptive activity names to name the activities in the data set
 activity.labels <- read.table("UCI HAR Dataset/activity_labels.txt")
-df$target <- activity.labels$V2[ match(df$target, activity.labels$V1)]
+df$Activity <- activity.labels$V2[ match(df$target, activity.labels$V1)]
 # 4- Appropriately labels the data set with descriptive variable names.
 names(df) <- names(df) %>% 
   tolower() %>% 
@@ -48,7 +50,8 @@ names(df) <- names(df) %>%
   sub("iqr", "interquartile.range", .) %>%
   sub("bodybody", "body", .)
 
-# View(data.frame(orignal.names, names(df)))
+
 # 5- From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject
 adf <- aggregate(df[, 1:561], list(df$target, df$subject), mean)
-View(adf)
+names(adf)[1:2] <- c("Activity", "Subject")
+adf <- tbl_df(adf)
