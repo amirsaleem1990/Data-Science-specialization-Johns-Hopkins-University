@@ -1,17 +1,15 @@
+# part_1
+library(data.table) 
+library(dplyr)
 pollutantmean <- function(directory, pollutant, id = 1:332){
-	## 'directory' is a character vector of length 1 indicating the location of the csv file
-	## 'pollutant' is a character vector of length 1 indicating the name of the pollutant of which we will calculate the mean; eithter 'sulfate' or 'nitrate'
-	## 'id' is an integer vectro indicating the monitor ID numbers to be used
-	## Return the mean of the pollutant across all monitors list in the 'id' vector (ignoring NA values)
-	
-	## NOTE: do not round the result!
+  files <- list.files(path = directory,pattern = ".csv")
+  temp <- lapply(paste0(directory, "/", files), read.csv, sep=",")
+  data <- rbindlist(temp)
+  if (class(id) == "numeric"){ # this means the <id> is single digit, not a range
+    filtered.data <- data %>% filter(ID == id)
+  }else if(class(id) == "integer"){# this means the <id> is range
+    filtered.data <- data %>% filter(ID >= range(id)[1], ID <= range(id)[2])
+  }
+  
+  mean(filtered.data[[pollutant]], na.rm = T)
 }
-
-
-if (pollutantmean("specdata", "nitrate", 70:72) == 1.706047){
-	print("OK")
-}else print("NO")
-
-if (pollutantmean("specdata", "nitrate", 23)) == 1.280833{
-	print("OK")
-}else print("NO")
