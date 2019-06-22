@@ -15,16 +15,9 @@ rankall <- function(outcome, num = "best") {
   if (any(grep(outcome, vars_names))){
 
     var_name <- grep(outcome, vars_names, value = T)
-    print(var_name)
-    # output <- aggregate(arrange(df, UQ(sym(var_name)),
-    #                             UQ(sym("hospital.name"))),
-    #                     list(df$state),
-    #                     FUN=head, num)
-    #
-    # top_n(output[,c("hospital.name", "state")], 5)
     splited = split(df, df$state)
     ans = lapply(splited, function(x){
-      adf <- arrange(x, UQ(sym(var_name)))
+      adf <- x[order(x[var_name], x["hospital.name"]),]
       n = ifelse(num == "best", 1, ifelse(num == "worst", nrow(x), num))
       adf[n,"hospital.name"]
     })
@@ -32,3 +25,6 @@ rankall <- function(outcome, num = "best") {
   }else stop("invalid state")
   
 }
+tail(rankall("pneumonia", "worst"), 3)
+# outcome <- "pneumonia"
+# num <- "worst"
