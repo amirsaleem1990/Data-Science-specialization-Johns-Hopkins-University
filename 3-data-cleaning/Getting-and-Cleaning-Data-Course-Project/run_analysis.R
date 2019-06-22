@@ -2,12 +2,12 @@ library(utils)
 library(dplyr)
 library(tidyr)
 # official.help <- "https://thoughtfulbloke.wordpress.com/2015/09/09/getting-and-cleaning-the-assignment/"
-url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
-download.file(url, destfile = "Dataset.zip")
-utils::unzip("Dataset.zip")
+# url <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+# download.file(url, destfile = "Dataset.zip")
+# utils::unzip("Dataset.zip")
 # 1- Merges the training and the test sets to create one data set.
 features.names <- read.table("UCI HAR Dataset/features.txt")
-X.train <- read.table("UCI HAR Dataset/train/X_train.txt", col.names = features.names$V2)
+X.train <- read.table("UCI HAR Dataset/train/X_train.txt", col.names = features.names$V2s)
 y.train <- read.table("UCI HAR Dataset/train/y_train.txt", col.names = c("target"))
 subject.train <- read.table("UCI HAR Dataset/train/subject_train.txt", col.names = "subject")
 
@@ -16,7 +16,6 @@ y.test <- read.table("UCI HAR Dataset/test/y_test.txt", col.names = c("target"))
 subject.test <- read.table("UCI HAR Dataset/test/subject_test.txt", col.names = "subject")
 
 df <- rbind(cbind(X.train, y.train, subject.train), cbind(X.test, y.test, subject.test))
-# load("df.rda") # saved joined df
 
 # 2- Extracts only the measurements on the mean and standard deviation for each measurement.
 length(grep("mean|std", names(df)))
@@ -55,3 +54,4 @@ names(df) <- names(df) %>%
 adf <- aggregate(df[, 1:561], list(df$target, df$subject), mean)
 names(adf)[1:2] <- c("Activity", "Subject")
 adf <- tbl_df(adf)
+write.table(adf, file = "FinalData.txt", row.name=FALS)
