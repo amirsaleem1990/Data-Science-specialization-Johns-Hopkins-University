@@ -1,0 +1,100 @@
+---
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+---
+
+# Assessing the ToothGrowth Dataset with R
+**Author: Danilo Mutti**
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(fig.path = "course_project_b_figure/", fig.width = 5, fig.height = 3, dpi = 144)
+set.seed(1)
+library(ggplot2, warn.conflicts = FALSE)
+library(reshape2, warn.conflicts = FALSE)
+```
+
+## Abstract
+
+In this report we analyze the ToothGrowth dataset. We statistically compare the effectiveness of tooth growth in Guinea pigs for each combination of dose level of Vitamin C and delivery method. According to our findings, 0.5 and 1.0 mg doses of Orange Juice promote distinct average tooth growth when compared to Vitamin C. With a 2.0 mg dose, there is a high probability that there is no difference between delivery methods.
+
+## ToothGrowth Dataset
+The [ToothGrowth dataset](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/ToothGrowth.html) (TG) contains data about the effect of vitamin C on tooth growth in Guinea pigs. In this study, the response is the length of odontoblasts (teeth) in each of 60 distinct Guinea pigs, 10 for each combination of dose level of Vitamin C (0.5, 1, and 2 mg) and delivery method (orange juice or ascorbic acid).
+
+The dataset contains a data frame with 60 observations on 3 variables.
+
+| Column Index | Column Name | Column Type | Description                 |
+|:------------:|:-----------:|:-----------:|-----------------------------|
+| [,1]         | len	     | numeric	   | Tooth length                |
+| [,2]         | supp	     | factor      | Supplement type (VC or OJ). |
+| [,3]         | dose        | numeric     | Dose in milligrams.         |
+
+We start by loading the dataset, followed by a basic exploration of how the data is structured.
+
+```{r}
+data(ToothGrowth)
+str(ToothGrowth)
+```
+
+The following figure *seems to indicate* that orange juice (OJ) is more effective for lower/intermediate dose levels. When dose levels are higher, the effectiveness between OJ and Vitamin C (VC) *seems to be similar*, with OJ presenting more consistent results.
+
+```{r}
+g <- ggplot(data = ToothGrowth, aes(x = interaction(supp, dose), y = len, fill = supp))
+g <- g + geom_boxplot(outlier.colour = "red") + scale_fill_brewer(palette = "Pastel2")
+g <- g + labs(title="ToothGrowth by dose and supplement type",
+              x="Supplement type and dose", y="Tooth length"); g
+```
+
+## Data Processing
+
+In this dataset, rows 1 to 10 correspond to the observations from Guinea pigs 1 to 10. The eleventh row contains another observation of Guinea pig number 1, and so on. In order to tidy this dataset, we are going to fit it into 6 columns and 10 rows. Each row corresponds to one specific Guinea pig, and each column represents a supplement (VC or OJ) and its associated dose (0.5, 1.0 or 2.0).
+
+```{r}
+ToothGrowth$guinea.pig <- rep(c(1:10), 6)
+print(tidy <- dcast(ToothGrowth, guinea.pig ~ supp + dose, value.var = "len"))
+```
+
+## Data Analysis
+
+In this section, we are going to perform several tests to compare tooth growth of Guinea pigs by supplement (OJ, VC) and dose (0.5, 1.0, and 2.0 milligrams).
+For every comparation, we will consider the following hypotheses:
+
+* H_0: For a given dose level of Vitamin C, **there is no difference in average tooth growth** when we compare the delivery method (Orange Juice or Ascorbic Acid).
+* H_a: For a given dose level of Vitamin C, **there is an actual difference in average tooth growth** when we compare the delivery method (Orange Juice or Ascorbic Acid).
+
+The `t.test` function requires two other parameters: `var.equal` and `paired`. The first parameter indicates whether to treat the two variances as being equal. If TRUE then the pooled variance is used to estimate the variance otherwise the Welch (or Satterthwaite) approximation to the degrees of freedom is used. The dataset provides no information on this subject, hence we consider the safer choice and take the equality as FALSE. The second parameter is set as FALSE, due to the description of the dataset, which states that there were 60 distinct Guinea pigs in the experiment.
+
+
+**1) 0.5 milligrams**
+
+```{r}
+tres_0.5 <- t.test(tidy$OJ_0.5, tidy$VC_0.5, paired = FALSE, var.equal = FALSE)
+tres_0.5$conf.int
+```
+
+Based on `t.test` results, we decide to **reject**, with a 95% confidence interval, the null hypothesis H_0. The p-value of `r tres_0.5$p.value` indicates a low probability that OJ and VC equally promote the same average tooth growth when the dosage is 0.5 mg.
+
+
+**2) 1.0 milligrams**
+
+```{r}
+tres_1 <- t.test(tidy$OJ_1, tidy$VC_1, paired = FALSE, var.equal = FALSE)
+tres_1$conf.int
+```
+
+Similarly to the previous result, we decide to **reject**, with a 95% confidence interval, the null hypothesis H_0. The p-value of `r tres_1$p.value` indicates a low probability that OJ and VC equally promote the same average tooth growth when the dosage is 1.0 mg.
+
+
+**3) 2.0 milligrams**
+
+```{r}
+tres_2 <- t.test(tidy$OJ_2, tidy$VC_2, paired = FALSE, var.equal = FALSE)
+tres_2$conf.int
+```
+
+This time, we decide to **accept**, with a 95% confidence interval, the null hypothesis H_0. The p-value of `r tres_2$p.value` indicates a high probability that OJ and VC equally promote the same average tooth growth when the dosage is 2.0 mg.
+
+## Conclusion
+
+In this report, we compared the effectiveness of tooth growth in Guinea pigs for each combination of dose level of Vitamin C (0.5, 1, and 2 mg) and delivery method (OJ or VC). We executed three `t.tests`, one for each dose, with a 95% confidence interval. As the dataset contains data of 60 distinct Guinea pigs, the sample is not paired. Additionally, we considered the two variances as not being equals. Summing up, lower and  intermediate doses of Orange Juice are more effective than Vitamin C. With a 2.0 mg dose, there is a high probability that these delivery methods are equally effective.

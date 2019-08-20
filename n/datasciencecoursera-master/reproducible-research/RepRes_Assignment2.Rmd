@@ -1,0 +1,122 @@
+<!--
+http://redheadedstepdata.io/large-weather-events/
+-->
+# Assessment of economic and population impacts of weather events using the NOAA Storm Database
+
+```{r}
+knitr::opts_chunk$set(fig.path = "figure/", cache.path = "cache/", fig.width = 9, fig.height = 6, dpi = 144)
+
+library(dplyr, warn.conflicts = FALSE)
+library(ggplot2, warn.conflicts = FALSE)
+library(RColorBrewer, warn.conflicts = FALSE)
+library(reshape2, warn.conflicts = FALSE)
+library(scales, warn.conflicts = FALSE)
+library(lubridate, warn.conflicts = FALSE)
+library(stringr, warn.conflicts = FALSE)
+
+cfile <- "./repdata-data-StormData.csv.bz2"
+url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+
+sessionInfo()
+```
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+The U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+This article aims at addressing two questions about weather events that happened in the US: a) "which ones are most harmful with respect to population health?"; and b) "which ones have the greatest economic consequences?".
+
+The analysis of the NOAA Storm Database allowed us to conclude that **FLOODS** are the most economically harmful weather events, while **TORNADOES** are the most dangerous to human lives.
+
+## Data Processing
+
+The dataset is available [here](`r url`) in the form of a comma-separated-value file, compressed via the bzip2 algorithm to reduce its size. The dataset is downloaded from the aforementioned website in the working directory and read into the `noaa` variable.
+
+```{r, cache = TRUE}
+if (!file.exists(cfile)) {
+    download.file(url = url, destfile = cfile, method = "curl")
+}
+noaa <- read.table(bzfile(cfile), header = TRUE, stringsAsFactors = FALSE, na.strings = "NA", sep = ",", quote = "\"")
+noaa <- noaa %>%
+            select(EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP, BGN_DATE) %>%
+            mutate(EVTYPE = str_trim(toupper(EVTYPE)))
+
+max <- 10
+
+event_types <- levels(as.factor(noaa$EVTYPE))
+```
+
+In what follows, we will develop and present the code necessary to address the questions that were previously listed.
+
+#### Q1 -- Across the United States, which types of events are most harmful with respect to population health?
+
+According to the [storm data documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf), the `EVTYPE` variable denotes the types of weather events that happened across the United States. In this article, we will take into consideration the sum of the number of fatalities (`noaa$FATALITIES`) and the number of injuries (`noaa$INJURIES`) as a means to order which events were most harmful with respect to population health. Since there are `r length(event_types)` distinct types of events in the database, we will select the first `r max` most harmful events.
+
+```{r, cache = TRUE}
+noaa_health_impact <- noaa %>%
+                          select(EVTYPE, FATALITIES, INJURIES) %>%
+                          group_by(type = EVTYPE) %>% 
+                          summarise(fatalities = sum(FATALITIES), injuries = sum(INJURIES)) %>%
+                          arrange(desc(fatalities, injuries)) %>%
+                          slice(1:max) %>%
+                          mutate(type = factor(type, rev(type)))
+
+noaa_health_impact
+
+ggplot(melt(noaa_health_impact, id.var = "type"), aes(x = type, y = value, fill = variable)) + geom_bar(stat = "identity") + coord_flip() + scale_y_continuous(labels = comma) + xlab("Severe Weather Event") + ylab("Health Impact (Fatalities + Injuries)") + ggtitle("Public Health Consequences") + scale_fill_manual(values = c("#FF0000", "#FF9912"), name ="Impact", labels=c("Fatalities", "Injuries"))
+```
+
+#### Q2 -- Across the United States, which types of events have the greatest economic consequences?
+
+Estimate economic consequences were measured in dollars (`noaa$PROPDMG` and `noaa$CROPDMG`), and its value rounded to three significant digits, followed by an alphabetical character signifying the magnitude of the number (`noaa$PROPDMGEXP` and `noaa$CROPDMGEXP`), i.e., 1.55B for $1,550,000,000. Alphabetical characters used to signify magnitude include "K" for thousands, "M" for millions, and "B" for billions. In order to get an accurate value, these tuples(`DMG, DMGEXP`) must be decoded and converted into plain values. The task is performed by `value_calc` function (which does the calculation), and `damage_calc` (which sums the two kinds of damages). As we previously have done, we will select the first `r max` most harmful events.
+
+```{r, cache = TRUE}
+damage_calc <- function(row) {
+    value_calc <- function(number = 0, exp = "") {
+        if (exp %in% c("", "-", "?", "+")) return(number)
+        if (exp %in% c("H", "h")) return(number * 10^2)
+        if (exp %in% c("k", "K")) return(number * 10^3)
+        if (exp %in% c("m", "M")) return(number * 10^6)
+        if (exp %in% c("B", "b")) return(number * 10^9)
+        return(number * 10^as.integer(exp))
+    }
+    prop <- value_calc(as.numeric(row["PROPDMG"]), row["PROPDMGEXP"])
+    crop <- value_calc(as.numeric(row["CROPDMG"]), row["CROPDMGEXP"])
+    return(prop + crop)
+}
+
+noaa$DAMAGE <- apply(noaa, 1, damage_calc)
+
+noaa_economic_impact <- noaa %>%
+                            select(EVTYPE, DAMAGE) %>%
+                            group_by(type = EVTYPE) %>% 
+                            summarise(damage = sum(DAMAGE)) %>%
+                            arrange(desc(damage)) %>%
+                            slice(1:max) %>%
+                            mutate(type = factor(type, rev(type)))
+
+noaa_economic_impact
+
+ggplot(noaa_economic_impact, aes(x = type, y = damage, fill = type)) + geom_bar(stat = "identity") + scale_fill_manual(values = colorRampPalette(brewer.pal(5,"Reds"))(max)) + coord_flip() + scale_y_continuous(labels = comma) + xlab("Severe Weather Event") + ylab("Damages (US$)") + ggtitle("Economic Consequences") + guides(fill = FALSE)
+```
+
+
+## Results
+
+```{r, cache = TRUE}
+harmful_year <- noaa %>%
+                       filter(EVTYPE %in% c("TORNADO", "FLOOD")) %>%
+                       select(type = EVTYPE, year = BGN_DATE) %>%
+                       transform(count = 1, year = year(mdy_hms(year))) %>%
+                       group_by(type, year) %>%
+                       summarise(total = sum(count)) %>%
+                       arrange(type, year)
+
+group_by(harmful_year, type) %>% summarise(occurrences = sum(total))
+
+ggplot(data=harmful_year, aes(x=year, y=total, group=type, colour=type)) + geom_line() + geom_point(size = 3)  + scale_x_continuous(breaks = c(seq(from = 1950, to = 2011, by = 10))) + scale_y_continuous(breaks = c(seq(from = 0, to = 4000, by = 500))) + scale_color_brewer(palette = "Set1") + xlab("Year") + ylab("Occurrences") + ggtitle("Most Harmful Event Occurrences per Year")
+```
+
+In this article, we analysed the NOAA Storm Database in order to assess the economic and population impacts of severe weather events. To evaluate the economic aspect, this article took into consideration the sum of damages caused to properties and crops, represented by two pairs of columns `{(PROPDMG,PROPDMGEXP), (CROPDMG,CROPDMGEXP)}`. Public health impact was measured in terms of fatalities and injuries, represented by `{FATALITIES, INJURIES}` columns, respectively. The idea is that events were ordered in descending order, first by the number of fatalities followed by the number of injuries.
+
+Our data allow us to conclude that **FLOODS** are the most harmful weather events from an economical point of view, with losses surpassing US$ 150 billion dollars; from a public health perspective, **TORNADOES** are the most harmful events, causing a total of 5633 fatalities and 91346 injuries.
