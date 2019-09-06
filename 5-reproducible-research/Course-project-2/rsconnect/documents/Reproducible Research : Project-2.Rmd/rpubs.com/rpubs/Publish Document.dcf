@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/525583/67a59c2fb9454495ae2d9a8865391f17
+bundleId: https://api.rpubs.com/api/v1/document/525583/67a59c2fb9454495ae2d9a8865391f17
+url: http://rpubs.com/amirsaleem/525583
+when: 1567749185.54577
